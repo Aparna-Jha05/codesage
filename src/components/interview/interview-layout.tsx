@@ -16,6 +16,20 @@ import type { ChatMessage } from '@/app/page';
 
 type HintLevel = 'Nudge' | 'Guide' | 'Direction';
 
+// Define a custom interface for the SpeechRecognition API to resolve the TypeScript error.
+// This interface includes only the properties and methods used in this component.
+interface ISpeechRecognition {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: () => void;
+  onend: () => void;
+  onerror: (event: any) => void;
+  onresult: (event: any) => void;
+  start: () => void;
+  stop: () => void;
+}
+
 interface InterviewLayoutProps {
   problem: Problem;
   onInterviewComplete: (report: AssessCodeQualityOutput, code: string, chatHistory: ChatMessage[]) => void;
@@ -30,7 +44,8 @@ export function InterviewLayout({ problem, onInterviewComplete }: InterviewLayou
   const [isGettingHint, setIsGettingHint] = useState<boolean>(false);
 
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  // Use the custom interface for the recognitionRef.
+  const recognitionRef = useRef<ISpeechRecognition | null>(null);
   
   const [isAssessing, setIsAssessing] = useState<boolean>(false);
 
@@ -40,7 +55,7 @@ export function InterviewLayout({ problem, onInterviewComplete }: InterviewLayou
   const codeHasChanged = useRef(false);
   
   const playText = useCallback((text: string) => {
-    if ('speechSynthesis' in window) {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       window.speechSynthesis.speak(utterance);
@@ -132,7 +147,7 @@ export function InterviewLayout({ problem, onInterviewComplete }: InterviewLayou
     
     // Stop any speaking from previous problem
     return () => {
-      if ('speechSynthesis' in window) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
     };
@@ -148,8 +163,14 @@ export function InterviewLayout({ problem, onInterviewComplete }: InterviewLayou
   };
 
   const startRecording = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+    // Ensure this code runs only in the browser.
+    if (typeof window === 'undefined') {
+        return;
+    }
+    
+    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognitionAPI) {
       toast({
         variant: "destructive",
         title: "Browser Not Supported",
@@ -158,7 +179,7 @@ export function InterviewLayout({ problem, onInterviewComplete }: InterviewLayou
       return;
     }
     
-    const recognition = new SpeechRecognition();
+    const recognition: ISpeechRecognition = new SpeechRecognitionAPI();
     recognitionRef.current = recognition;
     recognition.continuous = false;
     recognition.interimResults = false;
