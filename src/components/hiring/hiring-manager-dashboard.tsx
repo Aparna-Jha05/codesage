@@ -20,7 +20,8 @@ export function HiringManagerDashboard({ onBack }: HiringManagerDashboardProps) 
 
     useEffect(() => {
         const storedSessions = JSON.parse(localStorage.getItem('interview_sessions') || '[]');
-        setSessions(storedSessions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+        // FIX: Added explicit types for sort function parameters
+        setSessions(storedSessions.sort((a: InterviewSession, b: InterviewSession) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
     }, []);
 
     return (
